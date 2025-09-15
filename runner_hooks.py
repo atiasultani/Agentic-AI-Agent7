@@ -10,7 +10,7 @@ from agents import (Agent,
                     enable_verbose_stdout_logging,
                     RunContextWrapper,
                     set_tracing_disabled,
-                    AgentHooks)
+                    RunHooks)
 
 from dotenv import load_dotenv
 
@@ -43,23 +43,21 @@ async def get_weather(country: str) -> str:
     # Simulate a weather API call
     return f"The current weather in {country} is sunny with a temperature of 25°C."
 
-# Example of Agent Hooks
+#hooks run in Runner.run   
+class Runner_hooks(RunHooks):
+    async def on_agent_start(self,context:RunContextWrapper,agent: Agent):
+        print(f"Agent {agent.name} is starting with input: {context}")
 
-class HelloAgentHooks(AgentHooks):
-    def __init__(self,lifeCycle_name:str):
-        self.lifeCycle_name=lifeCycle_name
+    async def on_agent_end(self,context:RunContextWrapper,agent: Agent, result: str):
+        print(f"Agent {agent.name} has finished with result: {result}")
 
-    async def on_start(self,context:RunContextWrapper,agent:Agent):
-       
-            print(f" \n\n lifecyle name :{self.lifeCycle_name} Agent {agent.name} is starting with context: {context}\n\n")
-    async def on_end(self,context:RunContextWrapper,agent:Agent,output:str):
-            print(f"Agent {agent.name} has finished with result: {output}")    
+    async def on_llm_start(self, context: RunContextWrapper, agent: Agent, system_prompt, input_items):
+        print(f"\n\n[RunLifecycle] LLM call for agent {agent.name} starting with system prompt: {system_prompt} and input items: {input_items}\n\n")
 
 news_agent = Agent( 
     name="news-agent",
     instructions="you are an agent that can provide news updates.",
     model=model,
-    hooks=HelloAgentHooks("news_agent")
     )
 
 main_agent = Agent(
@@ -67,7 +65,6 @@ main_agent = Agent(
     instructions="you are a helpful assistant.",
     model=model,
     tools=[get_weather],
-    hooks=HelloAgentHooks("main_agent"),
     handoffs=[news_agent],
     model_settings=ModelSettings(temperature=0.2)
 )
@@ -77,8 +74,9 @@ async def main():
 
     result = await Runner.run(
             starting_agent=main_agent,
-            input="What is the weather of city karachi,pakistan?",
-            run_config=config)
+            input="What is the weather of pakistan?",
+            run_config=config,
+            hooks=Runner_hooks() )
     
     print("last_agent:",result.last_agent.name)
     print("Result:", result.final_output)
