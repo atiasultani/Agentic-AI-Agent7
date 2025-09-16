@@ -44,15 +44,34 @@ async def get_weather(country: str) -> str:
     return f"The current weather in {country} is sunny with a temperature of 25°C."
 
 #hooks run in Runner.run   
-class Runner_hooks(RunHooks):
-    async def on_agent_start(self,context:RunContextWrapper,agent: Agent):
-        print(f"Agent {agent.name} is starting with input: {context}")
 
-    async def on_agent_end(self,context:RunContextWrapper,agent: Agent, result: str):
-        print(f"Agent {agent.name} has finished with result: {result}")
+class Runner_hooks(RunHooks):
+    async def on_run_start(self, context, run_config):
+        print("🚀 Run started with config:", run_config)
 
     async def on_llm_start(self, context: RunContextWrapper, agent: Agent, system_prompt, input_items):
         print(f"\n\n[RunLifecycle] LLM call for agent {agent.name} starting with system prompt: {system_prompt} and input items: {input_items}\n\n")
+    async def on_agent_start(self, context, agent: Agent, input: str):
+        print(f"🤖 Agent {agent.name} is starting with input: {input}")
+
+    async def on_tool_start(self, context, agent: Agent, tool_name: str, tool_args: dict):
+        print(f"🛠️ Agent {agent.name} is calling tool {tool_name} with args {tool_args}")
+
+    async def on_tool_end(self, context, agent: Agent, tool_name: str, tool_result: str):
+        print(f"✅ Tool {tool_name} finished with result: {tool_result}")
+
+    async def on_handoff(self, context, from_agent: Agent, to_agent: Agent):
+        print(f"🔄 Handoff from {from_agent.name} → {to_agent.name}")
+
+    async def on_agent_end(self, context, agent: Agent, result: str):
+        print(f"🏁 Agent {agent.name} finished with result: {result}")
+
+    async def on_error(self, context, agent: Agent, error: Exception):
+        print(f"❌ Error in agent {agent.name}: {error}")
+
+    async def on_run_end(self, context, result):
+        print("✅ Run finished. Final result:", result.final_output)
+
 
 news_agent = Agent( 
     name="news-agent",
